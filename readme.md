@@ -1,6 +1,7 @@
 # 🚀 KrakenD JSON Generator & CI/CD Deployment Tool
 
 An opinionated toolkit to **generate, validate, and deploy `krakend.json`** configurations from structured JSON definitions. Includes CI/CD, Docker image building, and support for multi-environment deployments.
+
 > 🛠️ Built for teams who want a simple way to manage KrakenD configurations without diving into its DSL.
 
 ## 📌 Key Features
@@ -29,7 +30,8 @@ An opinionated toolkit to **generate, validate, and deploy `krakend.json`** conf
 │   ├── api/                         # One file per endpoint
 │   └── host/services_host_mapping.json
 ├── result/{ENV}/krakend.json        # Output files per environment
-├── scripts/                         # Python scripts for generation + fingerprinting
+├── scripts/                         # Python scripts
+│   ├── convert_excel_endpoints_to_krakend_json.py
 │   └── krakend_json_generator.py
 ├── Dockerfile                       # For Docker builds
 ├── docker-compose.yml               # For local development
@@ -40,11 +42,37 @@ An opinionated toolkit to **generate, validate, and deploy `krakend.json`** conf
 
 ```mermaid
 graph TD
-  A[Write JSON definitions] --> B[Run Generator Script]
-  B --> C[Create krakend.json]
-  C --> D[Build Docker Image]
-  D --> E[Push to Container Registry]
+  A[📄 Define API & Host JSONs] --> B[⚙️ Run Generator Script]
+  B --> C[🧱 Generate krakend.json]
+  C --> D[🐳 Build & Tag Docker Image]
+  D --> E[📤 Push to Container Registry]
+  E --> F[🛠️ Update GitOps Manifests]
+  F --> G[🚀 Deploy via Argo CD]
+
 ```
+
+## 📦 Process Breakdown
+
+1. Define API & Host JSONs
+API definitions live in `mappings/api/*.json`
+Host mapping in `mappings/host/service_host_mapping.json`
+
+2. Run the Generator Script
+Executes generate_krakend_json.py
+Produces krakend.json at result/env/krakend.json
+
+3. Build & Tag Docker Image
+Uses a Dockerfile to copy the generated config
+Tags: :latest-machine, random hash (staging), or version tag (prod)
+
+4. Push to Container Registry
+Targets your registry (e.g. ECR)
+
+5. Update GitOps Manifests
+Changes go into `gitops-argocd/api-gateway/krakend/*`
+
+6. Deploy via Argo CD
+Argo CD picks up changes and deploys to api-gateway namespace in EKS
 
 ## 🧪 Getting Started
 
@@ -116,6 +144,7 @@ This generator supports modular configuration through several base files stored 
 📚 Reference: KrakenD extra_config docs
 
 ---
+
 `krakend_security_config.json`
 📍 Merged into: extra_config.security
 
@@ -133,6 +162,7 @@ This generator supports modular configuration through several base files stored 
 📚 KrakenD security reference
 
 ---
+
 `krakend_opentelemetry_config.json`
 📍 Merged into:
 
