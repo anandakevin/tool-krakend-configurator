@@ -1,0 +1,5 @@
+{
+    "prefix-1": "https://prefix-1-service.domain.com",
+    "prefix-2": "https://prefix-2-service.domain.com",
+    "some-eks-service": "https://full-service-name.namespace.svc.cluster.local:8080"
+}

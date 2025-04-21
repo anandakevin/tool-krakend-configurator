@@ -1,0 +1,9 @@
+{
+    "$schema": "https://www.krakend.io/schema/krakend.json",
+    "version": 3,
+    "name": "KrakenD - API Gateway",
+    "timeout": "30000ms",
+    "output_encoding": "json",
+    "endpoints": [],
+    "extra_config": {}
+}

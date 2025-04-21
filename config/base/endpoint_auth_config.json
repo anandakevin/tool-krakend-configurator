@@ -1,0 +1,13 @@
+{
+    "auth/validator": {
+        "alg": "HS256",
+        "jwk_url": "http://auth-service.auth.svc.cluster.local:80/private/api/v1/jwk-tokens",
+        "issuer": "some issuer",
+        "roles_key_is_nested": true,
+        "roles_key": "",
+        "cache": true,
+        "disable_jwk_security": true,
+        "jwk_fingerprints": [],
+        "operation_debug": true
+    }
+}

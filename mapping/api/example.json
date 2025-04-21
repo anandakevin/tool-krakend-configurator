@@ -1,0 +1,24 @@
+[
+    {
+        "endpoint_name": "firstGetEndpoint",
+        "company": "some company",
+        "platform": "some platform",
+        "service": "some-eks-service",
+        "method": "GET",
+        "path": "/api/v1/some-path-here",
+        "params": "?query=some-query-here",
+        "header": "Authorization, Content-Type",
+        "encoding_type": "no-op"
+    },
+    {
+        "endpoint_name": "first_post_endpoint",
+        "company": "some company",
+        "platform": "some platform",
+        "service": "prefix-2",
+        "method": "POST",
+        "path": "/api/v1/some-path-here",
+        "params": "?query=some-query-here",
+        "header": "Authorization, Content-Type",
+        "encoding_type": "no-op"
+    }
+]

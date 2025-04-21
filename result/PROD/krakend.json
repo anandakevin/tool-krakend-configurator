@@ -1,0 +1,175 @@
+{
+    "$schema": "https://www.krakend.io/schema/krakend.json",
+    "version": 3,
+    "name": "KrakenD - API Gateway",
+    "timeout": "30000ms",
+    "output_encoding": "json",
+    "endpoints": [
+        {
+            "endpoint": "/some-eks-service/api/v1/some-path-here",
+            "method": "GET",
+            "output_encoding": "no-op",
+            "backend": [
+                {
+                    "url_pattern": "/api/v1/some-path-here",
+                    "encoding": "no-op",
+                    "sd": "static",
+                    "method": "GET",
+                    "disable_host_sanitize": false,
+                    "host": [
+                        "https://full-service-name.namespace.svc.cluster.local:8080"
+                    ]
+                }
+            ],
+            "input_headers": [
+                "Authorization",
+                "Content-Type"
+            ],
+            "input_query_strings": [
+                "query"
+            ],
+            "extra_config": {
+                "auth/validator": {
+                    "alg": "HS256",
+                    "jwk_url": "http://auth-service.auth.svc.cluster.local:80/private/api/v1/jwk-tokens",
+                    "issuer": "some issuer",
+                    "roles_key_is_nested": true,
+                    "roles_key": "",
+                    "cache": true,
+                    "disable_jwk_security": true,
+                    "jwk_fingerprints": [],
+                    "operation_debug": true
+                }
+            }
+        },
+        {
+            "endpoint": "/prefix-2/api/v1/some-path-here",
+            "method": "POST",
+            "output_encoding": "no-op",
+            "backend": [
+                {
+                    "url_pattern": "/api/v1/some-path-here",
+                    "encoding": "no-op",
+                    "sd": "static",
+                    "method": "POST",
+                    "disable_host_sanitize": false,
+                    "host": [
+                        "https://prefix-2-service.domain.com"
+                    ]
+                }
+            ],
+            "input_headers": [
+                "Authorization",
+                "Content-Type"
+            ],
+            "input_query_strings": [
+                "query"
+            ],
+            "extra_config": {
+                "auth/validator": {
+                    "alg": "HS256",
+                    "jwk_url": "http://auth-service.auth.svc.cluster.local:80/private/api/v1/jwk-tokens",
+                    "issuer": "some issuer",
+                    "roles_key_is_nested": true,
+                    "roles_key": "",
+                    "cache": true,
+                    "disable_jwk_security": true,
+                    "jwk_fingerprints": [],
+                    "operation_debug": true
+                }
+            }
+        }
+    ],
+    "extra_config": {
+        "telemetry/opentelemetry": {
+            "service_name": "krakend",
+            "service_version": null,
+            "trace_sample_rate": 1,
+            "metric_reporting_period": 1,
+            "exporters": {
+                "otlp": [
+                    {
+                        "name": "otlp",
+                        "host": "alloy-service.alloy.svc.cluster.local",
+                        "port": 4317,
+                        "use_http": false
+                    }
+                ]
+            },
+            "layers": {
+                "global": {
+                    "disable_metrics": false,
+                    "disable_traces": false,
+                    "disable_propagation": false
+                },
+                "proxy": {
+                    "disable_metrics": false,
+                    "disable_traces": false
+                },
+                "backend": {
+                    "metrics": {
+                        "disable_stage": false,
+                        "round_trip": true,
+                        "read_payload": true,
+                        "detailed_connection": true,
+                        "static_attributes": []
+                    },
+                    "traces": {
+                        "disable_stage": false,
+                        "round_trip": true,
+                        "read_payload": true,
+                        "detailed_connection": true,
+                        "static_attributes": []
+                    }
+                }
+            },
+            "skip_paths": []
+        },
+        "telemetry/logging": {
+            "level": "DEBUG",
+            "prefix": "[KRAKEND]",
+            "syslog": false,
+            "stdout": true,
+            "format": "logstash",
+            "syslog_facility": "local3"
+        },
+        "security/cors": {
+            "allow_origins": [
+                "https://subdomain1.domain.com",
+                "https://subdomain2.domain.com"
+            ],
+            "expose_headers": [
+                "Content-Length",
+                "Authorization",
+                "*"
+            ],
+            "max_age": "12h",
+            "allow_methods": [
+                "GET",
+                "POST"
+            ],
+            "allow_headers": [
+                "Authorization",
+                "Content-Type"
+            ],
+            "allow_credentials": true
+        },
+        "security/bot-detector": {
+            "enabled": true,
+            "block": true,
+            "whitelist": []
+        },
+        "security/http": {
+            "allowed_hosts": [],
+            "ssl_proxy_headers": {},
+            "browser_xss_filter": true,
+            "content_security_policy": "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;",
+            "content_type_nosniff": true,
+            "sts_seconds": "15724800",
+            "sts_include_subdomains": true,
+            "frame_deny": true,
+            "custom_frame_options_value": "SAMEORIGIN",
+            "ssl_redirect": false
+        }
+    }
+}

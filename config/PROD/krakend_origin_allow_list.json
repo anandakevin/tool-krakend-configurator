@@ -1,0 +1,6 @@
+{
+    "allow_origins": [
+        "https://subdomain1.domain.com",
+        "https://subdomain2.domain.com"
+    ]
+}
