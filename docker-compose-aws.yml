@@ -1,0 +1,11 @@
+version: "3"
+services:
+  krakend:
+    image: ${REGISTRY:-992382520594.dkr.ecr.ap-southeast-3.amazonaws.com}/api-gateway/krakend:${IMAGE_TAG:-latest-arm64}  # Default to the provided values or use defaults
+    volumes:
+      - .:/etc/krakend
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVICE_NAME=KrakenD API Gateway
+    command: [ "run", "-dc", "krakend.json", "" ]

@@ -1,0 +1,92 @@
+name: Build and Push Image to AWS ECR (Staging)
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+jobs:
+  build-and-push-image:
+    name: Build and Push image to AWS ECR (Staging)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # - name: Set up Python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: '3.13.0'
+
+      # - name: Install Python dependencies
+      #   run: make install-python-deps
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1 # More information on this action can be found below in the 'AWS Credentials' section
+        with:
+          role-to-assume: arn:aws:iam::992382520594:role/github-actions-ecr-dev
+          aws-region: ap-southeast-3
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.26.1'
+        id: install
+
+      - name: Build, tag, and push docker image to Amazon ECR for amd64 architecture
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: api-gateway/krakend
+          IMAGE_TAG: ${{ github.sha }}
+        run: make docker-build-push-dev
+      
+      - name: Clone GitOps repository
+        run: |
+          git config --unset-all http.https://github.com/.extraheader
+          git clone https://$GH_USERNAME:$GH_PERSONAL_ACCESS_TOKEN@github.com/anandakevin/vault-infra-manifests.git
+        env:
+          GITOPS_REPO_URL: https://github.com/anandakevin/vault-infra-manifests.git
+          GITOPS_REPO: vault-infra-manifests
+          GH_USERNAME: ${{secrets.GH_USERNAME}}
+          GH_PERSONAL_ACCESS_TOKEN: ${{secrets.GH_PERSONAL_ACCESS_TOKEN}}
+      
+      - name: Install Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/kustomize
+
+      - name: Update Kustomize image tag
+        run: |
+          cd $GITOPS_REPO/k8s/api-gateway/krakend/service/krakend/overlays/staging-aws
+          kustomize edit set image ${{ steps.login-ecr.outputs.registry }}/api-gateway/krakend:$IMAGE_TAG
+        env: 
+          GITOPS_REPO: vault-infra-manifests
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Build Kubernetes manifests using Kustomize
+        run: |
+          cd $GITOPS_REPO
+          make kustomize-krakend-aws-dev
+        env: 
+          GITOPS_REPO: vault-infra-manifests
+
+      - name: Commit and Push changes to GitOps repo
+        run: |
+          cd $GITOPS_REPO
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add .  # Stage the updated YAML file
+          git commit -m "Update api-gateway/krakend staging aws image tag in deployment.yaml to ${{ github.sha }}"
+          git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/anandakevin/vault-infra-manifests.git
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN  }}  # Token for authentication
+          GITOPS_REPO: vault-infra-manifests
