@@ -1,0 +1,13 @@
+[
+    {
+        "endpoint_name": "firstGetEndpoint",
+        "company": "some company",
+        "platform": "some platform",
+        "service": "some-eks-service",
+        "method": "GET",
+        "path": "/api/v1/some-dev-path-here",
+        "params": "?query=some-query-here",
+        "header": "Authorization, Content-Type",
+        "encoding_type": "no-op"
+    }
+]

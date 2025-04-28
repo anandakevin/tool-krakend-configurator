@@ -6,10 +6,14 @@ import glob
 
 # Constants
 DEFAULT_ENV = 'DEV'
+
+# used directories
 CONFIG_DIR = '../config'
-MAPPING_API_DIR = '../mapping/api'
-MAPPING_HOST_DIR = '../mapping/host'
+BASE_MAPPING_API_DIR = '../mapping/api/base'
+BASE_MAPPING_HOST_DIR = '../mapping/host/base'
 RESULT_DIR = '../result'
+
+# config files
 KRAKEND_CONFIG_FILE = 'krakend_config.json'
 EXTRA_CONFIG_FILE = 'krakend_extra_config.json'
 ENDPOINT_AUTH_CONFIG_FILE = 'endpoint_auth_config.json'
@@ -185,10 +189,10 @@ allow_origins = load_allow_origins(env_config_path)
 extra_config["security/cors"]["allow_origins"] = allow_origins
 
 # Load service-host mapping
-service_host_mapping = load_service_host_mapping(get_path(MAPPING_HOST_DIR, SERVICE_HOST_MAPPING_FILE))
+service_host_mapping = load_service_host_mapping(get_path(BASE_MAPPING_HOST_DIR, SERVICE_HOST_MAPPING_FILE))
 
 # Process API endpoints
-json_data = load_json_files(get_path(MAPPING_API_DIR))
+json_data = load_json_files(get_path(BASE_MAPPING_API_DIR))
 processed_endpoints = {}
 all_endpoints, all_methods, all_headers = [], set(), set()
 

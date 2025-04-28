@@ -1,7 +1,7 @@
 {
     "telemetry/opentelemetry": {
         "service_name": "krakend",
-        "service_version": null,
+        "service_version": "v1.0.0",
         "trace_sample_rate": 1,
         "metric_reporting_period": 1,
         "exporters": {
@@ -60,9 +60,11 @@
         "allow_credentials": true
     },
     "security/bot-detector": {
-        "enabled": true,
-        "block": true,
-        "whitelist": []
+        "cache_size": 1000,
+        "allow": ["MyAndroidClient/1.0" , "Pingdom.com_bot_version_1.1"],
+        "deny": ["facebookexternalhit/1.1"],
+        "empty_user_agent_is_bot": true,
+        "patterns": ["GoogleBot.*", "bingbot.*", "yandex.*", "baiduspider.*", "facebookexternalhit.*", "rogerbot.*", "linkedinbot.*", "embedly.*", "quora link preview.*", "showyoubot.*", "outbrain.*", "pinterest.*", "slackbot.*", "vkShare.*", "W3C_Validator.*"]
     },
     "security/http": {
         "allowed_hosts": [],
@@ -70,7 +72,7 @@
         "browser_xss_filter": true,
         "content_security_policy": "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;",
         "content_type_nosniff": true,
-        "sts_seconds": "15724800",
+        "sts_seconds": 15724800,
         "sts_include_subdomains": true,
         "frame_deny": true,
         "custom_frame_options_value": "SAMEORIGIN",
