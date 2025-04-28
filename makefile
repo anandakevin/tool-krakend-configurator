@@ -3,30 +3,27 @@ REGISTRY ?=  # Allow overriding in GitHub Actions or via command line
 REPOSITORY ?= api-gateway-krakend
 ENV ?= LOCAL  # Allow ENV to be overridden (defaults to LOCAL)
 
-# Detect architecture
-ifeq ($(OS),Windows_NT)
+# Detect architecture to support multiple platforms
+ifeq ($(OS), Windows_NT)
     LOCAL_ARCH := $(shell echo %PROCESSOR_ARCHITECTURE%)
+    DOCKER_BUILD_CMD := docker build  # Set local build command
 else
     LOCAL_ARCH := $(shell uname -m)
+    DOCKER_BUILD_CMD := docker buildx build
 endif
 
-# Set PLATFORM and IMAGE_TAG based on environment (local or CI)
+# Set LOCAL_ARCH and IMAGE_TAG based on environment (local or CI)
 ifeq ($(ENV),)
     ENV := DEV  # Default to DEV if ENV is not set
 endif
 
-# Set platform based on environment and architecture
 ifeq ($(ENV), LOCAL)
-    PLATFORM =      # No platform defined for local (will be handled by Docker default)
     IMAGE_TAG := latest-$(LOCAL_ARCH)  # Tag based on local architecture
-else
-    PLATFORM = linux/amd64  # For DEV/PROD, use amd64 platform
-    IMAGE_TAG := $(IMAGE_TAG)  # Tag based on amd64 architecture for CI
 endif
 
 # Build, tag, and push the Docker image
 docker-build-push:
-	$(DOCKER_BUILD_CMD) $(if $(PLATFORM),--platform $(PLATFORM)) --build-arg ENV=$(ENV) $(if $(REGISTRY),--tag $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG)) --tag $(REPOSITORY):$(IMAGE_TAG) .
+	$(DOCKER_BUILD_CMD) $(if $(LOCAL_ARCH),--platform $(LOCAL_ARCH)) --build-arg ENV=$(ENV) $(if $(REGISTRY),--tag $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG)) --tag $(REPOSITORY):$(IMAGE_TAG) .
 	$(if $(REGISTRY),docker push $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG),)
 
 # Local build target (for ARM64 architecture or default local configuration)
