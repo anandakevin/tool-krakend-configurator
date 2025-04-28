@@ -4,6 +4,8 @@ An opinionated toolkit to **generate, validate, and deploy `krakend.json`** conf
 
 > 🛠️ Built for teams who want a simple way to manage KrakenD configurations without diving into its DSL.
 
+![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-blue.svg)
+
 ## 📌 Key Features
 
 - Write clean JSON fragments, and auto-generate a full `krakend.json`
@@ -13,7 +15,7 @@ An opinionated toolkit to **generate, validate, and deploy `krakend.json`** conf
 - Built-in support for:
   - Header-based auth injection
   - Env-specific CORS origin lists
-  - Excel or JSON-based service-host resolution
+  - JSON-based service-host resolution
 
 ## 🗂️ Project Structure
 
@@ -22,21 +24,22 @@ An opinionated toolkit to **generate, validate, and deploy `krakend.json`** conf
 ├── .github/workflows/               # CI/CD for environment-based builds
 ├── config/                          # Base and extra gateway configs
 │   ├── base/                        # Base config files
-│   |   ├── krakend_extra_config.json
-│   |   ├── krakend_security_config.json
-│   |   └── krakend_opentelemetry_config.json
-│   └── {env}/origin_allow_list.json
+│   └── {env}/			     # Environment specific files
 ├── mapping/                         # JSON files for API and service mappings
-│   ├── api/                         # One file per endpoint
-│   └── host/services_host_mapping.json
-├── result/{ENV}/krakend.json        # Output files per environment
+│   ├── api/                         # API mappings
+│       ├── base/                    # Base files
+│       └── {env}/                   # Environment specific files
+│   └── host/			     # Host mappings from services, etc
+│       ├── base/                    # Base files
+│       └── {env}/                   # Environment specific files
+├── result/{env}/krakend.json        # Output files per environment
 ├── scripts/                         # Python scripts
-│   ├── convert_excel_endpoints_to_krakend_json.py
-│   └── krakend_json_generator.py
 ├── Dockerfile                       # For Docker builds
-├── docker-compose.yml               # For local development
+├── docker-compose-{registry}.yml    # For local development
 └── README.md
 ```
+
+More about the configs can be found [here](./config/readme.md)
 
 ## ⚙️ Workflow Overview
 
@@ -54,25 +57,20 @@ graph TD
 ## 📦 Process Breakdown
 
 1. Define API & Host JSONs
-API definitions live in `mappings/api/*.json`
-Host mapping in `mappings/host/service_host_mapping.json`
-
+   API definitions live in `mappings/api/*.json`
+   Host mapping in `mappings/host/service_host_mapping.json`
 2. Run the Generator Script
-Executes generate_krakend_json.py
-Produces krakend.json at result/env/krakend.json
-
+   Executes generate_krakend_json.py
+   Produces krakend.json at result/env/krakend.json
 3. Build & Tag Docker Image
-Uses a Dockerfile to copy the generated config
-Tags: :latest-machine, random hash (staging), or version tag (prod)
-
+   Uses a Dockerfile to copy the generated config
+   Tags: :latest-machine, random hash (staging), or version tag (prod)
 4. Push to Container Registry
-Targets your registry (e.g. ECR)
-
+   Targets your registry (e.g. ECR)
 5. Update GitOps Manifests
-Changes go into `gitops-argocd/api-gateway/krakend/*`
-
+   Changes go into `k8s/api-gateway/krakend/*` in [vault-devops](https://github.com/anandakevin/vault-devops)
 6. Deploy via Argo CD
-Argo CD picks up changes and deploys to api-gateway namespace in EKS
+   Argo CD picks up changes and deploys to api-gateway namespace in EKS
 
 ## 🧪 Getting Started
 
@@ -91,122 +89,21 @@ make install-python-deps
 Generate krakend.json
 
 ```bash
-make generate-krakend-json-local
-make generate-krakend-json-dev
-make generate-krakend-json-prod
-make generate-krakend-json-all
+make generate-krakend-json-{env}
 ```
 
 Validate Output
 
 ```bash
-krakend check -d -c result/local/krakend.json
+krakend check -d -c result/{env}/krakend.json
 ```
 
 Run Locally
 
 ```bash
-make docker-build-local
-docker compose up
+make docker-build-push-local
+make docker-compose-up
 ```
-
-## 🧩 Config Composition
-
-This generator supports modular configuration through several base files stored in the config/ directory. These are appended directly into the generated krakend.json under appropriate keys, without additional interpretation.
-
----
-
-`krakend_extra_config.json`
-📍 Target path in final config:
-
-```json
-"extra_config": { ... }
-```
-
-📄 Example:
-
-```json
-{
-  "telemetry/logging": {
-    "level": "DEBUG",
-    "stdout": true,
-    "format": "logstash"
-  },
-  "security/cors": {
-    "allow_origins": ["*"],
-    "allow_methods": [],
-    "allow_headers": [],
-    "allow_credentials": true
-  }
-}
-```
-
-📚 Reference: KrakenD extra_config docs
-
----
-
-`krakend_security_config.json`
-📍 Merged into: extra_config.security
-
-📄 Example:
-
-```json
-{
-  "security/http": {
-    "content_security_policy": "default-src 'self';",
-    "frame_deny": true
-  }
-}
-```
-
-📚 KrakenD security reference
-
----
-
-`krakend_opentelemetry_config.json`
-📍 Merged into:
-
-```json
-"extra_config": {
-  "telemetry/opentelemetry": { ... }
-}
-```
-
-📄 Example:
-
-```json
-{
-  "telemetry/opentelemetry": {
-    "trace_sample_rate": 1,
-    "metric_reporting_period": 1
-  }
-}
-```
-
-📚 OpenTelemetry integration
-
----
-
-`origin_allow_list.json`
-
-📍 Used to populate:
-
-```json
-extra_config.security/cors.allow_origins
-```
-
-📄 Example:
-
-```json
-{
-  "allow_origins": [
-    "https://app.example.com",
-    "https://admin.example.com"
-  ]
-}
-```
-
-> ☝️ This file is env-specific (config/dev/, config/prod/, etc).
 
 ---
 
@@ -223,22 +120,21 @@ This repository comes with GitHub Actions workflows that build, push, and update
 
 ### 📂 Workflow Files
 
-- `.github/workflows/build-and-push-staging.yml`
-- `.github/workflows/build-and-push-prod.yml`
+- `.github/workflows/build-push-{env}-{registry}.yml`
 
 ### 🔁 Triggers
 
-Staging: Runs on push to the `develop` branch.
+Staging: Runs on push to the `main` branch.
 Production: Runs when a Git tag is pushed (`v*.*.*`).
 
 ### 🔧 Key Steps (Both Workflows)
 
-Checkout the repository
-Configure container registry credentials and log in
-Build Docker image and tag it (`commit SHA` for staging, `tag` for production)
-Clone GitOps repository
-Patch image reference in GitOps manifests using Kustomize
-Push updated manifests back to GitOps repo
+1. Checkout the repository
+2. Configure container registry credentials and log in
+3. Build Docker image and tag it (`commit SHA` for staging, `tag` for production)
+4. Clone GitOps repository
+5. Patch image reference in GitOps manifests using Kustomize
+6. Push updated manifests back to GitOps repo
 
 ### 🔐 Required Secrets
 
@@ -250,8 +146,8 @@ Make sure the following GitHub secrets are set:
 The GitOps repo structure is expected to contain overlays under paths like:
 
 ```bash
-krakend/service/overlays/staging
-krakend/service/overlays/production
+k8s/api-gateway/krakend/service/overlays/staging
+k8s/api-gateway/krakend/service/overlays/production
 ```
 
 You can customize the image name, registry, and path conventions to fit your infrastructure.
@@ -264,26 +160,28 @@ Each endpoint is defined in a JSON fragment stored under mapping/api/. Multiple 
 
 ```json
 [
-  {
-    "endpoint_name": "getPing",
-    "service": "app-eda",
-    "method": "GET",
-    "path": "/ping",
-    "params": "",
-    "payload": "",
-    "header": "",
-    "encoding_type": "no-op"
-  },
-  {
-    "endpoint_name": "getUsersByID",
-    "service": "auth",
-    "method": "GET",
-    "path": "/api/v1/users/:user-id",
-    "params": "",
-    "payload": "",
-    "header": "Authorization: Bearer <token>, Content-Type: application/json",
-    "encoding_type": "no-op"
-  }
+    {
+        "endpoint_name": "firstGetEndpoint",
+        "company": "some company",
+        "platform": "some platform",
+        "service": "some-eks-service",
+        "method": "GET",
+        "path": "/api/v1/some-path-here",
+        "params": "?query=some-query-here&second-query=some-second-query-here",
+        "header": "Authorization, Content-Type",
+        "encoding_type": "no-op"
+    },
+    {
+        "endpoint_name": "first_post_endpoint",
+        "company": "some company",
+        "platform": "some platform",
+        "service": "prefix-2",
+        "method": "POST",
+        "path": "/api/v1/some-path-here",
+        "params": "?query=some-query-here",
+        "header": "Authorization, Content-Type",
+        "encoding_type": "no-op"
+    }
 ]
 ```
 
@@ -296,79 +194,70 @@ Each endpoint is defined in a JSON fragment stored under mapping/api/. Multiple 
 
 ### 🚀 Sample Transformation
 
-Given the `getUsersByID` input above, the resulting `krakend.json` includes:
+Given the `firstGetEndpoint` input above, the resulting `krakend.json` includes:
 
 ```json
 {
-  "endpoint": "/auth/api/v1/users/{user-id}",
-  "method": "GET",
-  "output_encoding": "no-op",
-  "backend": [
-    {
-      "url_pattern": "/api/v1/users/{user-id}",
-      "encoding": "no-op",
-      "sd": "static",
-      "method": "GET",
-      "host": ["http://auth-service.example.com"]
+    "endpoint": "/some-eks-service/api/v1/some-path-here",
+    "method": "GET",
+    "output_encoding": "no-op",
+    "backend": [
+        {
+            "url_pattern": "/api/v1/some-path-here",
+            "encoding": "no-op",
+            "sd": "static",
+            "method": "GET",
+            "disable_host_sanitize": false,
+            "host": [
+                "https://full-service-name.namespace.svc.cluster.local:8080"
+            ]
+        }
+    ],
+    "input_headers": [
+        "Authorization",
+        "Content-Type"
+    ],
+    "input_query_strings": [
+        "query"
+    ],
+    "extra_config": {
+        "auth/validator": {
+            "alg": "HS256",
+            "jwk_url": "http://auth-service.auth.svc.cluster.local:80/private/api/v1/jwk-tokens",
+            "issuer": "some issuer",
+            "roles_key_is_nested": true,
+            "roles_key": "",
+            "cache": true,
+            "disable_jwk_security": true,
+            "jwk_fingerprints": [],
+            "operation_debug": true
+        }
     }
-  ],
-  "input_headers": ["Authorization", "Content-Type"],
-  "input_query_strings": [],
-  "extra_config": {
-    "auth/validator": {
-      "alg": "RS256",
-      "jwk_url": "..."
-    }
-  }
 }
 ```
 
-### 🔗 Service-to-Host Mapping
+## 🔗 Service-to-Host Mapping
 
 Define short service aliases and their actual cluster URLs in:
 
 ```pgsql
-mapping/host/services_host_mapping.json
+/mapping/host/base/services.json
 ```
 
-### 🧾 Example
+#### 🧾 Example
 
 ```json
 {
-  "n": "http://notification-service-cluster.local:80",
-  "we": "http://workflow-service-cluster.local:80",
-  "auth": "http://auth-service-cluster.local:80"
+    "prefix-1": "https://prefix-1-service.domain.com",
+    "prefix-2": "https://prefix-2-service.domain.com",
+    "some-eks-service": "https://full-service-name.namespace.svc.cluster.local:8080"
 }
 ```
 
 ### 💡 Behavior
 
-- In endpoint definitions, use `"service": "auth"` or `"n"`, etc.
+- In endpoint definitions, use `"service": "prefix-1"` or `"some-eks-service"`, etc.
 - The generator resolves the actual service host using this mapping.
-
-## 🌐 CORS Configuration Per Environment
-
-CORS origins are managed in:
-
-```
-config/{ENV}/origin_allow_list.json
-```
-
-### 🧾 Example
-
-```json
-{
-  "allow_origins": [
-    "https://app.example.com",
-    "https://admin.example.com"
-  ]
-}
-```
-
-### 💡 Behavior
-
-- Injected into `security/cors.allow_origins`
-- `allow_methods` and `allow_headers` inferred from defined endpoints
 
 ## 🌟 Why Use This?
 
@@ -387,3 +276,7 @@ config/{ENV}/origin_allow_list.json
 ## 🤝 Contributing
 
 PRs and suggestions welcome! This project is intentionally lean — fork or extend it to suit your org or setup.
+
+## 🛡️ License
+
+This project is licensed under the Creative Commons Attribution 4.0 International License. You are free to use, modify, and distribute this work, as long as you give appropriate credit to the author. Please attribute the project to [anandakevin](http://github.com/anandakevin) in a manner specified in the LICENSE file.
