@@ -26,7 +26,8 @@
                 "Content-Type"
             ],
             "input_query_strings": [
-                "query"
+                "query",
+                "second-query"
             ],
             "extra_config": {
                 "auth/validator": {

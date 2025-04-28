@@ -6,7 +6,7 @@
         "service": "some-eks-service",
         "method": "GET",
         "path": "/api/v1/some-path-here",
-        "params": "?query=some-query-here",
+        "params": "?query=some-query-here&second-query=some-second-query-here",
         "header": "Authorization, Content-Type",
         "encoding_type": "no-op"
     },
