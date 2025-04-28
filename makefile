@@ -3,8 +3,12 @@ REGISTRY ?=  # Allow overriding in GitHub Actions or via command line
 REPOSITORY ?= api-gateway-krakend
 ENV ?= LOCAL  # Allow ENV to be overridden (defaults to LOCAL)
 
-# Detect the architecture (local vs CI)
-LOCAL_ARCH := $(shell uname -m)
+# Detect architecture
+ifeq ($(OS),Windows_NT)
+    LOCAL_ARCH := $(shell echo %PROCESSOR_ARCHITECTURE%)
+else
+    LOCAL_ARCH := $(shell uname -m)
+endif
 
 # Set PLATFORM and IMAGE_TAG based on environment (local or CI)
 ifeq ($(ENV),)
@@ -22,12 +26,8 @@ endif
 
 # Build, tag, and push the Docker image
 docker-build-push:
-	DOCKER_BUILDKIT=0 docker build \
-		$(if $(PLATFORM),--platform $(PLATFORM)) \
-		--build-arg ENV=$(ENV) \
-		$(if $(REGISTRY),--tag $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG)) \
-		--tag $(REPOSITORY):$(IMAGE_TAG) .  # Tag without REGISTRY for local
-	$(if $(REGISTRY),docker push $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG),)  # Push only if REGISTRY is set
+	$(DOCKER_BUILD_CMD) $(if $(PLATFORM),--platform $(PLATFORM)) --build-arg ENV=$(ENV) $(if $(REGISTRY),--tag $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG)) --tag $(REPOSITORY):$(IMAGE_TAG) .
+	$(if $(REGISTRY),docker push $(REGISTRY)/$(REPOSITORY):$(IMAGE_TAG),)
 
 # Local build target (for ARM64 architecture or default local configuration)
 docker-build-local:
@@ -44,6 +44,14 @@ docker-build-push-dev:
 # PROD environment build (with push)
 docker-build-push-prod:
 	$(MAKE) docker-build-push ENV=PROD REGISTRY=$(REGISTRY)
+
+# running docker-compose
+docker-compose-up:
+	echo LOCAL_ARCH=$(LOCAL_ARCH) > .env
+	docker compose -f docker-compose-hub.yml up -d
+
+docker-compose-down:
+	docker compose -f docker-compose-hub.yml down
 
 # Run JWK fingerprint preparation and convert Excel to JSON based on ENV
 generate-krakend-json:
